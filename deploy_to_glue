@@ -1,0 +1,37 @@
+import boto3
+
+region = 'us-east-1'
+database_name = 'spotify_db'
+crawler_name = 'spotify_crawler'
+role_name = 'arn:*****************************'
+bucket_path = 's3://spotifydataa/spotify-data/'
+
+glue = boto3.client('glue', region_name=region)
+
+
+try:
+    glue.create_database(DatabaseInput={'Name': database_name})
+    print(f" Database '{database_name}' created.")
+except glue.exceptions.AlreadyExistsException:
+    print(f"Database '{database_name}' already exists.")
+
+
+try:
+    glue.create_crawler(
+        Name=crawler_name,
+        Role=role_name,
+        DatabaseName=database_name,
+        Targets={'S3Targets': [{'Path': bucket_path}]},
+        TablePrefix='spotify_',
+        SchemaChangePolicy={
+            'UpdateBehavior': 'UPDATE_IN_DATABASE',
+            'DeleteBehavior': 'DEPRECATE_IN_DATABASE'
+        }
+    )
+    print(f" Crawler '{crawler_name}' created.")
+except glue.exceptions.AlreadyExistsException:
+    print(f"Crawler '{crawler_name}' already exists.")
+
+
+glue.start_crawler(Name=crawler_name)
+print(f"🚀 Crawler '{crawler_name}' started.")
